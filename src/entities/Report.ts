@@ -34,7 +34,7 @@ class Report extends BaseEntity {
   severity: "MINOR" | "MODERATE" | "MAJOR" | "CRITICAL";
 
   @Column("text", { name: "reproduce_steps", nullable: false, array: true })
-  reproduceSteps: string[];
+  reproduceSteps: string;
 
   @ManyToOne(() => User, (reporter) => reporter.reports)
   reporter: User;

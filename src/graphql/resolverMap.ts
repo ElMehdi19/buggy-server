@@ -4,6 +4,7 @@ import {
   ValidationError,
   AuthenticationError,
   ApolloError,
+  PubSub,
 } from "apollo-server-express";
 import { sign } from "jsonwebtoken";
 
@@ -15,6 +16,7 @@ import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../constants";
 import { projectExists } from "../controllers/project";
 import { reportExistsById } from "../controllers/report";
 import Comment from "../entities/Comment";
+import { Request } from "express";
 
 const resolvers: IResolvers = {
   User: {
@@ -30,7 +32,7 @@ const resolvers: IResolvers = {
       return await Project.findOne(parent.project.id);
     },
     comments: async (parent: Report) => {
-      return Comment.find({ where: { report: parent } });
+      return Comment.find({ where: { report: parent }, relations: ["author"] });
     },
   },
   Project: {
@@ -57,12 +59,21 @@ const resolvers: IResolvers = {
       return await User.find({ relations: ["reports"] });
     },
     report: async (_: void, args: { id: number }) => {
-      return await Report.findOne(args.id, {
-        relations: ["reporter", "comments"],
+      const report = await Report.findOne(args.id, {
+        relations: ["reporter", "comments", "project"],
       });
+      if (!report) {
+        return null;
+      }
+      let { reproduceSteps } = report;
+      const steps = JSON.parse(reproduceSteps);
+      return { ...report, reproduceSteps: steps };
     },
     reports: async () => {
-      return await Report.find({ relations: ["reporter", "project"] });
+      return await Report.find({
+        relations: ["reporter", "project"],
+        order: { updated: "DESC", id: "DESC" },
+      });
     },
     project: async (_: void, args: { id: number }) => {
       return await Project.findOne(args.id);
@@ -75,8 +86,13 @@ const resolvers: IResolvers = {
         relations: ["author", "report"],
       });
     },
-    comments: async () => {
-      return await Comment.find({ relations: ["author", "report"] });
+    comments: async (_: void, args: { reportId: number }) => {
+      const report = await Report.findOne(args.reportId);
+      if (!report) return null;
+      return await Comment.find({
+        where: { report },
+        relations: ["author", "report"],
+      });
     },
     whoami: async (_: void, __: void, { req }) => {
       console.log(req.userId);
@@ -145,7 +161,7 @@ const resolvers: IResolvers = {
         details: string;
         created: string;
         severity: "MINOR" | "MODERATE" | "MAJOR" | "CRITICAL";
-        reproduceSteps: string[];
+        reproduceSteps: string;
         projectId: number;
       },
       { req }
@@ -174,7 +190,7 @@ const resolvers: IResolvers = {
     addComment: async (
       _: void,
       args: { reportId: number; content: string },
-      { req }
+      { req, pubsub }: { req: any; pubsub: PubSub }
     ) => {
       if (!req.userId) {
         throw new AuthenticationError("unauthorized access");
@@ -187,9 +203,31 @@ const resolvers: IResolvers = {
 
       const author = await findUserById(req.userId);
       const report = reportInstance as Report;
-      const comment = Comment.create({ content, author, report });
-
-      return await comment.save();
+      const commentEntity = Comment.create({ content, author, report });
+      const comment = await commentEntity.save();
+      pubsub.publish("NEW_COMMENT", {
+        newComment: {
+          id: comment.id,
+          content,
+          author,
+          report,
+          posted: comment.posted,
+        },
+      });
+      return comment;
+    },
+    updateReport: async (_: void, args: { id: number; steps: string }) => {
+      Report.update({ id: args.id }, { reproduceSteps: args.steps });
+      const report = await Report.findOne(args.id);
+      if (!report) return null;
+      console.log(JSON.parse(report.reproduceSteps));
+      return report;
+    },
+  },
+  Subscription: {
+    newComment: {
+      subscribe: (_: void, __: void, { pubsub }: { pubsub: PubSub }) =>
+        pubsub.asyncIterator("NEW_COMMENT"),
     },
   },
 };

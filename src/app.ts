@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer } from "http";
-import { ApolloServer } from "apollo-server-express";
+import { ApolloServer, PubSub } from "apollo-server-express";
 import { createConnection } from "typeorm";
 
 import schema from "./graphql/schema";
@@ -10,11 +10,14 @@ import { verifyTokens } from "./controllers/auth";
 // init express and apollo-server
 const app = express();
 const server = createServer(app);
+const pubsub = new PubSub();
 const apolloServer = new ApolloServer({
   schema,
   playground: true,
-  context: ({ req, res }) => ({ req, res }),
+  context: ({ req, res }) => ({ req, res, pubsub }),
 });
+
+apolloServer.installSubscriptionHandlers(server);
 
 // middlewares
 app.use(cookieParser);

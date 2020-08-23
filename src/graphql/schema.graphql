@@ -6,7 +6,7 @@ type Query {
   reports: [Report]
   projects: [Project]
   comment(id: Int!): Comment
-  comments: [Comment]
+  comments(reportId: Int!): [Comment]
   whoami: User
 }
 
@@ -24,11 +24,16 @@ type Mutation {
     details: String!
     created: String
     severity: String!
-    reproduceSteps: [String!]
+    reproduceSteps: String!
     projectId: Int!
   ): Report
   addProject(name: String!, department: String): Project
   addComment(reportId: Int!, content: String!): Comment
+  updateReport(id: Int!, steps: String!): Report
+}
+
+type Subscription {
+  newComment: Comment!
 }
 
 type User {
@@ -46,9 +51,10 @@ type Report {
   bug: String!
   details: String!
   created: String!
+  updated: String!
   status: String!
   severity: String!
-  reproSteps: [String!]
+  reproduceSteps: [String!]
   reporter: User!
   project: Project!
   comments: [Comment]
