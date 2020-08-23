@@ -33,7 +33,7 @@ type Mutation {
 }
 
 type Subscription {
-  newComment: Comment!
+  newComment(reportId: Int!): Comment!
 }
 
 type User {

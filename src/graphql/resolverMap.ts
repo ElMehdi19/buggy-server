@@ -5,6 +5,7 @@ import {
   AuthenticationError,
   ApolloError,
   PubSub,
+  withFilter,
 } from "apollo-server-express";
 import { sign } from "jsonwebtoken";
 
@@ -32,7 +33,11 @@ const resolvers: IResolvers = {
       return await Project.findOne(parent.project.id);
     },
     comments: async (parent: Report) => {
-      return Comment.find({ where: { report: parent }, relations: ["author"] });
+      return Comment.find({
+        where: { report: parent },
+        relations: ["author"],
+        order: { id: "DESC" },
+      });
     },
   },
   Project: {
@@ -92,6 +97,7 @@ const resolvers: IResolvers = {
       return await Comment.find({
         where: { report },
         relations: ["author", "report"],
+        order: { id: "DESC" },
       });
     },
     whoami: async (_: void, __: void, { req }) => {
@@ -226,8 +232,13 @@ const resolvers: IResolvers = {
   },
   Subscription: {
     newComment: {
-      subscribe: (_: void, __: void, { pubsub }: { pubsub: PubSub }) =>
-        pubsub.asyncIterator("NEW_COMMENT"),
+      subscribe: withFilter(
+        (_, __, { pubsub }: { pubsub: PubSub }) =>
+          pubsub.asyncIterator("NEW_COMMENT"),
+        (payload, variables) => {
+          return payload.newComment.report.id === variables.reportId;
+        }
+      ),
     },
   },
 };
