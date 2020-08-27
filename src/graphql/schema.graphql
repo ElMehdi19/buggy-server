@@ -29,7 +29,7 @@ type Mutation {
   ): Report
   addProject(name: String!, department: String): Project
   addComment(reportId: Int!, content: String!): Comment
-  updateReport: Boolean!
+  updateIssueStatus(reportId: Int!, status: String!): Boolean!
 }
 
 type Subscription {
