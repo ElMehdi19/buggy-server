@@ -15,9 +15,12 @@ import Project from "../entities/Project";
 import { userEmailExists, findUserById } from "../controllers/auth";
 import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../constants";
 import { projectExists } from "../controllers/project";
-import { reportExistsById } from "../controllers/report";
+import {
+  getReportById,
+  newReportEvent,
+  reportEventStringified,
+} from "../controllers/report";
 import Comment from "../entities/Comment";
-import { Request } from "express";
 
 const resolvers: IResolvers = {
   User: {
@@ -124,13 +127,13 @@ const resolvers: IResolvers = {
       }
 
       const accessToken = sign({ userId: user.id }, ACCESS_TOKEN_SECRET, {
-        expiresIn: "15s",
+        expiresIn: "1h",
       });
       const refreshToken = sign({ userId: user.id }, REFRESH_TOKEN_SECRET, {
         expiresIn: "7d",
       });
 
-      res.cookie("accessToken", accessToken, { maxAge: 15 * 1000 });
+      res.cookie("accessToken", accessToken, { maxAge: 3600 * 1000 });
       res.cookie("refreshToken", refreshToken, {
         maxAge: 7 * 24 * 3600 * 1000,
       });
@@ -175,9 +178,11 @@ const resolvers: IResolvers = {
       if (!req.userId) {
         throw new AuthenticationError("unauthorized access");
       }
-      const reporter = await User.findOne(req.userId);
+      const reporter = (await User.findOne(req.userId)) as User;
       const project = await Project.findOne(args.projectId);
-      const report = Report.create({ ...args, reporter, project });
+      const initEvent = newReportEvent(reporter, { type: "INIT_REPORT" });
+      const events = await reportEventStringified(initEvent);
+      const report = Report.create({ ...args, reporter, project, events });
       return await report.save();
     },
     addProject: async (
@@ -202,7 +207,7 @@ const resolvers: IResolvers = {
         throw new AuthenticationError("unauthorized access");
       }
       const { reportId, content } = args;
-      const reportInstance = await reportExistsById(reportId);
+      const reportInstance = await getReportById(reportId);
       if (!reportInstance) {
         throw new ApolloError("Report not found");
       }
@@ -222,12 +227,17 @@ const resolvers: IResolvers = {
       });
       return comment;
     },
-    updateReport: async (_: void, args: { id: number; steps: string }) => {
-      Report.update({ id: args.id }, { reproduceSteps: args.steps });
-      const report = await Report.findOne(args.id);
-      if (!report) return null;
-      console.log(JSON.parse(report.reproduceSteps));
-      return report;
+    updateReport: async () => {
+      const reports = await Report.find({ relations: ["reporter"] });
+      for (const report of reports) {
+        const user = (await User.findOne(report.reporter.id)) as User;
+        const initEvent = newReportEvent(user, {
+          type: "INIT_REPORT",
+        });
+        const events = await reportEventStringified(initEvent);
+        await Report.update({ id: report.id }, { events });
+      }
+      return true;
     },
   },
   Subscription: {

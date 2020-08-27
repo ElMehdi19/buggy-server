@@ -46,6 +46,13 @@ class Report extends BaseEntity {
 
   @OneToMany(() => Comment, (comment) => comment.report)
   comments: Comment[];
+
+  @Column("text", {
+    nullable: false,
+    default:
+      '[{"user":"Mehdi Rami","date":"1598486345775","description":"reported this issue"}]',
+  })
+  events: string;
 }
 
 export default Report;
