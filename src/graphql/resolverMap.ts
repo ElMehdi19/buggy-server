@@ -1,5 +1,4 @@
 import { IResolvers } from "graphql-tools";
-import { PubSub, withFilter } from "apollo-server-express";
 import { userField, reportField, projectField, commentField } from "./Fields";
 import {
   userQuery,
@@ -21,7 +20,13 @@ import {
   addProjectMutation,
   addCommentMutation,
   updateIssueStatusMutation,
+  temporaryMutation,
 } from "./Mutations";
+import {
+  newReportSubscription,
+  newCommentSubscription,
+  temporarySubscription,
+} from "./Subscriptions";
 
 const resolvers: IResolvers = {
   User: userField,
@@ -47,16 +52,17 @@ const resolvers: IResolvers = {
     addProject: addProjectMutation,
     addComment: addCommentMutation,
     updateIssueStatus: updateIssueStatusMutation,
+    temporary: temporaryMutation,
   },
   Subscription: {
     newComment: {
-      subscribe: withFilter(
-        (_, __, { pubsub }: { pubsub: PubSub }) =>
-          pubsub.asyncIterator("NEW_COMMENT"),
-        (payload, variables) => {
-          return payload.newComment.report.id === variables.reportId;
-        }
-      ),
+      subscribe: newCommentSubscription,
+    },
+    newReport: {
+      subscribe: newReportSubscription,
+    },
+    temporary: {
+      subscribe: temporarySubscription,
     },
   },
 };

@@ -30,10 +30,21 @@ type Mutation {
   addProject(name: String!, department: String): Project
   addComment(reportId: Int!, content: String!): Comment
   updateIssueStatus(reportId: Int!, status: String!): Boolean!
+  temporary: Boolean
 }
 
 type Subscription {
   newComment(reportId: Int!): Comment!
+  newReport: reportSubscription!
+  temporary: Temporary
+}
+
+type Count {
+  count: Int!
+}
+
+type Temporary {
+  notifications: Count!
 }
 
 type User {
@@ -74,4 +85,14 @@ type Comment {
   author: User!
   report: Report!
   posted: String!
+}
+
+type Author {
+  name: String!
+  image: String!
+}
+
+type reportSubscription {
+  author: Author
+  project: String!
 }

@@ -3,6 +3,7 @@ import {
   ValidationError,
   AuthenticationError,
   PubSub,
+  UserInputError,
 } from "apollo-server-express";
 import { Response } from "express";
 import { hash, compare } from "bcryptjs";
@@ -95,16 +96,28 @@ export const addReportMutation = async (
     reproduceSteps: string;
     projectId: number;
   },
-  { req }: { req: any }
+  { req, pubsub }: { req: any; pubsub: PubSub }
 ): Promise<Report | null> => {
   if (!req.userId) {
     throw new AuthenticationError("unauthorized access");
   }
   const reporter = (await User.findOne(req.userId)) as User;
   const project = await Project.findOne(args.projectId);
+  if (!project) {
+    throw new UserInputError("project doesn't exist");
+  }
   const initEvent = newReportEvent(reporter, { type: "INIT_REPORT" });
   const events = await reportEventStringified(initEvent);
   const report = Report.create({ ...args, reporter, project, events });
+  pubsub.publish("NEW_REPORT", {
+    newReport: {
+      author: {
+        name: `${reporter.firstName} ${reporter.lastName}`,
+        image: reporter.image,
+      },
+      project: `${project.name}`,
+    },
+  });
   return await report.save();
 };
 
@@ -174,5 +187,20 @@ export const updateIssueStatusMutation = async (
   const events = await reportEventStringified(event, reportId);
 
   await Report.update({ id: reportId }, { status, events });
+  return true;
+};
+
+export const temporaryMutation = async (
+  _: void,
+  __: void,
+  { req, pubsub }: { req: any; pubsub: PubSub }
+) => {
+  if (!req.userId) return null;
+  const user = (await User.findOne(req.userId)) as User;
+  const { notificationCount: count } = user;
+  await User.update({ id: user.id }, { notificationCount: count + 1 });
+  pubsub.publish("TEMPORARY", {
+    temporary: { notifications: { count: count + 1 } },
+  });
   return true;
 };

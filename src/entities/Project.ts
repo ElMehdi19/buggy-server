@@ -20,6 +20,9 @@ class Project extends BaseEntity {
 
   @OneToMany(() => Report, (report) => report.project)
   reports: Report[];
+
+  @Column("text", { default: "" })
+  notifications: string;
 }
 
 export default Project;

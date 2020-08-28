@@ -33,6 +33,9 @@ class User extends BaseEntity {
 
   @OneToMany(() => Comment, (comment) => comment.author)
   comments: Comment[];
+
+  @Column("int", { default: 0, name: "notification_count" })
+  notificationCount: number;
 }
 
 export default User;
