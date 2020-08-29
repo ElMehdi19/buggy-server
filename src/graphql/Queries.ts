@@ -2,6 +2,8 @@ import Report from "../entities/Report";
 import User from "../entities/User";
 import Project from "../entities/Project";
 import Comment from "../entities/Comment";
+import { AuthenticationError } from "apollo-server-express";
+import { getNotifications } from "../controllers/notifications";
 
 export const userQuery = async (_: void, args: { id: number }) => {
   return await User.findOne(args.id);
@@ -55,7 +57,22 @@ export const commentsQuery = async (_: void, args: { reportId: number }) => {
 };
 
 export const whoami = async (_: void, __: void, { req }: { req: any }) => {
-  console.log(req.userId);
   if (!req.userId) return null;
   return await User.findOne(req.userId);
+};
+
+export const notificationCountQuery = async (
+  _: void,
+  __: void,
+  { req }: { req: any }
+) => {
+  if (!req.userId) {
+    throw new AuthenticationError("unauthorized");
+  }
+  const { notificationCount } = (await User.findOne(req.userId)) as User;
+  return notificationCount;
+};
+
+export const notificationsQuery = async () => {
+  return await getNotifications();
 };

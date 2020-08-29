@@ -27,8 +27,8 @@ export const newCommentSubscription = withFilter(
   }
 );
 
-export const temporarySubscription = (
+export const newNotificationSubscription = (
   _: void,
   __: void,
   { pubsub }: { pubsub: PubSub }
-) => pubsub.asyncIterator("TEMPORARY");
+) => pubsub.asyncIterator(["NEW_COMMENT", "NEW_REPORT"]);

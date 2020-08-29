@@ -2,7 +2,9 @@ import Report from "../entities/Report";
 import User from "../entities/User";
 
 export const getReportById = async (id: number): Promise<Report | boolean> => {
-  const report = await Report.findOne(id, { relations: ["reporter"] });
+  const report = await Report.findOne(id, {
+    relations: ["reporter", "project"],
+  });
   console.log(report!.id === id);
   if (!report || report.id !== id) return false;
   return report;

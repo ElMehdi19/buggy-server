@@ -25,6 +25,7 @@ import {
 } from "../controllers/report";
 import { projectExists } from "../controllers/project";
 import { findUserById } from "../controllers/auth";
+import { addNotification } from "../controllers/notifications";
 
 export const loginMutation = async (
   _: void,
@@ -109,13 +110,13 @@ export const addReportMutation = async (
   const initEvent = newReportEvent(reporter, { type: "INIT_REPORT" });
   const events = await reportEventStringified(initEvent);
   const report = Report.create({ ...args, reporter, project, events });
+  const notification = await addNotification(reporter.id, {
+    type: "NEW_REPORT",
+    projectId: project.id,
+  });
   pubsub.publish("NEW_REPORT", {
-    newReport: {
-      author: {
-        name: `${reporter.firstName} ${reporter.lastName}`,
-        image: reporter.image,
-      },
-      project: `${project.name}`,
+    newNotification: {
+      notification,
     },
   });
   return await report.save();
@@ -153,13 +154,14 @@ export const addCommentMutation = async (
   const report = reportInstance as Report;
   const commentEntity = Comment.create({ content, author, report });
   const comment = await commentEntity.save();
+  const notification = await addNotification(author.id, {
+    type: "NEW_COMMENT",
+    projectId: report.project.id,
+    reportId: report.id,
+  });
   pubsub.publish("NEW_COMMENT", {
-    newComment: {
-      id: comment.id,
-      content,
-      author,
-      report,
-      posted: comment.posted,
+    newNotification: {
+      notification,
     },
   });
   const event = newReportEvent(author, { type: "NEW_COMMENT" });
@@ -190,17 +192,14 @@ export const updateIssueStatusMutation = async (
   return true;
 };
 
-export const temporaryMutation = async (
+export const resetNotificationMutation = async (
   _: void,
   __: void,
-  { req, pubsub }: { req: any; pubsub: PubSub }
+  { req }: { req: any }
 ) => {
-  if (!req.userId) return null;
-  const user = (await User.findOne(req.userId)) as User;
-  const { notificationCount: count } = user;
-  await User.update({ id: user.id }, { notificationCount: count + 1 });
-  pubsub.publish("TEMPORARY", {
-    temporary: { notifications: { count: count + 1 } },
-  });
+  if (!req.userId) {
+    throw new AuthenticationError("unauthorized");
+  }
+  await User.update({ id: req.userId }, { notificationCount: 0 });
   return true;
 };

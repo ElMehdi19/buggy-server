@@ -8,6 +8,8 @@ type Query {
   comment(id: Int!): Comment
   comments(reportId: Int!): [Comment]
   whoami: User
+  notificationCount: Int!
+  notifications: [String]
 }
 
 type Mutation {
@@ -30,21 +32,19 @@ type Mutation {
   addProject(name: String!, department: String): Project
   addComment(reportId: Int!, content: String!): Comment
   updateIssueStatus(reportId: Int!, status: String!): Boolean!
-  temporary: Boolean
+  resetNotificationCount: Boolean!
 }
 
 type Subscription {
   newComment(reportId: Int!): Comment!
   newReport: reportSubscription!
-  temporary: Temporary
+  newNotification: Notification!
 }
 
-type Count {
-  count: Int!
-}
+# union Notification = reportSubscription | Comment
 
-type Temporary {
-  notifications: Count!
+type Notification {
+  notification: String!
 }
 
 type User {
