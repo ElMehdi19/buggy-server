@@ -6,6 +6,7 @@ import {
   OneToMany,
 } from "typeorm";
 import Report from "./Report";
+import Notification from "./Notification";
 
 @Entity()
 class Project extends BaseEntity {
@@ -21,8 +22,8 @@ class Project extends BaseEntity {
   @OneToMany(() => Report, (report) => report.project)
   reports: Report[];
 
-  @Column("text", { default: "" })
-  notifications: string;
+  @OneToMany(() => Notification, (notification) => notification.project)
+  notifications: Notification[];
 }
 
 export default Project;

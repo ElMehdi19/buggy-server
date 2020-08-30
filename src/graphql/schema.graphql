@@ -9,7 +9,7 @@ type Query {
   comments(reportId: Int!): [Comment]
   whoami: User
   notificationCount: Int!
-  notifications: [String]
+  notifications: Notifications
 }
 
 type Mutation {
@@ -95,4 +95,9 @@ type Author {
 type reportSubscription {
   author: Author
   project: String!
+}
+
+type Notifications {
+  count: Int!
+  notifications: [String!]
 }

@@ -6,6 +6,9 @@ import { createConnection } from "typeorm";
 import schema from "./graphql/schema";
 import { mehdi, cookieParser } from "./controllers/middlewares";
 import { verifyTokens } from "./controllers/auth";
+import Project from "./entities/Project";
+import Notification from "./entities/Notification";
+import Report from "./entities/Report";
 
 // init express and apollo-server
 const app = express();

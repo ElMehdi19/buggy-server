@@ -1,30 +1,25 @@
 import User from "../entities/User";
 import Project from "../entities/Project";
+import Notification from "../entities/Notification";
 
 export const getNotifications = async (
   projectId: number = 0
-): Promise<string[]> => {
-  // for development only
-  // to be removed after updating User entity to support current user's projects
-  if (projectId == 0) {
-    const notices: string[] = [];
-    for (const project of await Project.find()) {
-      const { notifications } = project;
-      if (!notifications) {
-        continue;
-      }
-      notices.push(
-        ...JSON.parse(notifications)
-          .reverse()
-          .filter((notif: string) => notif.length > 0)
-      );
-    }
-    return notices;
-  }
-  ///////////////////////////////////////////////////////////////
-  const { notifications } = (await Project.findOne(projectId)) as Project;
-  if (!notifications) return [""];
-  return JSON.parse(notifications);
+): Promise<Notification[]> => {
+  // let notifications: Notification[] = [];
+  // if (projectId == 0) {
+  //   const projects = await Project.find();
+  //   for (const project of projects) {
+  //     notifications = [...project.notifications];
+  //   }
+  //   return notifications;
+  // }
+  // const project = (await Project.findOne(projectId)) as Project;
+  // return project.notifications;
+  const notifications = await Notification.find({
+    order: { id: "DESC" },
+    select: ["notification"],
+  });
+  return notifications;
 };
 
 type notificationPayload = {
@@ -36,28 +31,29 @@ type notificationPayload = {
 export const addNotification = async (
   userId: number,
   context: notificationPayload
-) => {
+): Promise<string> => {
   const { type, projectId } = context;
-  const { name: project } = (await Project.findOne(projectId)) as Project;
+  const project = (await Project.findOne(projectId)) as Project;
+  const { name: projectName } = project;
   const user = (await User.findOne(userId)) as User;
   const { firstName, lastName } = user;
   let content: string;
   switch (type) {
     case "NEW_COMMENT":
       const { reportId } = context;
-      content = `commented on report #${reportId} about project ${project}`;
+      content = `commented on report #${reportId} about project ${projectName}`;
       break;
     default:
-      content = `reported an issue on project ${project}`;
+      content = `reported an issue on project ${projectName}`;
       break;
   }
-  const notificationString = `${firstName} ${lastName} ${content}`;
-  const notifications = await getNotifications(projectId);
-  const updatedNotifications = [...notifications, notificationString];
-  await Project.update(
-    { id: projectId },
-    { notifications: JSON.stringify(updatedNotifications) }
-  );
+  const notificationContent = `${firstName} ${lastName} ${content}`;
+  const notification = await Notification.create({
+    notification: notificationContent,
+    project,
+  });
+
+  await notification.save();
   const users = await User.find();
 
   for (const user of users) {
@@ -66,5 +62,5 @@ export const addNotification = async (
     await User.update({ id: user.id }, { notificationCount: count });
   }
 
-  return notificationString;
+  return notification.notification;
 };

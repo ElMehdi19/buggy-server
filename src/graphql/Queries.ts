@@ -33,6 +33,9 @@ export const reportsQuery = async () => {
 };
 
 export const projectQuery = async (_: void, args: { id: number }) => {
+  // const project = await Project.findOne(args.id, {
+  //   relations: ["notifications"],
+  // });
   return await Project.findOne(args.id);
 };
 
@@ -73,6 +76,20 @@ export const notificationCountQuery = async (
   return notificationCount;
 };
 
-export const notificationsQuery = async () => {
-  return await getNotifications();
+export const notificationsQuery = async (
+  _: void,
+  __: void,
+  { req }: { req: any }
+): Promise<{ count: number; notifications: string[] }> => {
+  if (!req.userId) {
+    throw new AuthenticationError("unauthorized");
+  }
+  const { notificationCount: count } = (await User.findOne(req.userId)) as User;
+  const notices = await getNotifications();
+  const notifications: string[] = [];
+  for (const notice of notices) {
+    const { notification } = notice;
+    notifications.push(notification);
+  }
+  return { count, notifications };
 };
