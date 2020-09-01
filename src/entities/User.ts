@@ -7,6 +7,7 @@ import {
 } from "typeorm";
 import Report from "./Report";
 import Comment from "./Comment";
+import Notification from "./Notification";
 
 @Entity("users")
 class User extends BaseEntity {
@@ -36,6 +37,9 @@ class User extends BaseEntity {
 
   @Column("int", { default: 0, name: "notification_count" })
   notificationCount: number;
+
+  @OneToMany(() => Notification, (notification) => notification.notifier)
+  notificationsCreated: Notification[];
 }
 
 export default User;

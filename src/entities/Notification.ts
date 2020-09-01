@@ -6,6 +6,8 @@ import {
   Column,
 } from "typeorm";
 import Project from "./Project";
+import Report from "./Report";
+import User from "./User";
 
 @Entity()
 class Notification extends BaseEntity {
@@ -20,6 +22,12 @@ class Notification extends BaseEntity {
 
   @ManyToOne(() => Project, (project) => project.notifications)
   project: Project;
+
+  @ManyToOne(() => Report, (report) => report.notifications)
+  report: Report;
+
+  @ManyToOne(() => User, (user) => user.notificationsCreated)
+  notifier: User;
 }
 
 export default Notification;

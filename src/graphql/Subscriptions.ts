@@ -31,4 +31,5 @@ export const newNotificationSubscription = (
   _: void,
   __: void,
   { pubsub }: { pubsub: PubSub }
-) => pubsub.asyncIterator(["NEW_COMMENT", "NEW_REPORT"]);
+) =>
+  pubsub.asyncIterator(["NEW_COMMENT", "NEW_REPORT", "REPORT_STATUS_UPDATE"]);

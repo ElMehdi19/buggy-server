@@ -4,6 +4,7 @@ import Project from "../entities/Project";
 import Comment from "../entities/Comment";
 import { AuthenticationError } from "apollo-server-express";
 import { getNotifications } from "../controllers/notifications";
+import Notification from "../entities/Notification";
 
 export const userQuery = async (_: void, args: { id: number }) => {
   return await User.findOne(args.id);
@@ -76,20 +77,34 @@ export const notificationCountQuery = async (
   return notificationCount;
 };
 
+export const notificationQuery = async (_: void, { id }: { id: number }) => {
+  const notice = await Notification.findOne(id, {
+    relations: ["notifier", "report", "project"],
+  });
+  if (!notice) return null;
+  const { notification, notifier, report } = notice;
+  return {
+    notification,
+    notifier: notifier.id,
+    report: report.id,
+  };
+};
+
 export const notificationsQuery = async (
   _: void,
   __: void,
   { req }: { req: any }
-): Promise<{ count: number; notifications: string[] }> => {
+): Promise<{ count: number; notifications: {}[] }> => {
   if (!req.userId) {
     throw new AuthenticationError("unauthorized");
   }
   const { notificationCount: count } = (await User.findOne(req.userId)) as User;
   const notices = await getNotifications();
-  const notifications: string[] = [];
-  for (const notice of notices) {
-    const { notification } = notice;
-    notifications.push(notification);
-  }
+  const notifications: {}[] = [];
+  notices.forEach((notice) => {
+    console.log(notice);
+    const { notification, report } = notice;
+    notifications.push({ notification, report: report.id });
+  });
   return { count, notifications };
 };

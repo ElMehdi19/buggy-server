@@ -5,7 +5,10 @@ import Comment from "../entities/Comment";
 
 export const userField = {
   reports: async (parent: User) => {
-    return await Report.find({ where: { reporter: parent } });
+    return await Report.find({
+      where: { reporter: parent },
+      relations: ["reporter", "project"],
+    });
   },
 };
 
@@ -14,6 +17,7 @@ export const reportField = {
     return await User.findOne(parent.reporter.id);
   },
   project: async (parent: Report & { project: Project }) => {
+    console.log(parent);
     return await Project.findOne(parent.project.id);
   },
   comments: async (parent: Report) => {
@@ -29,7 +33,7 @@ export const projectField = {
   reports: async (parent: Project) => {
     return await Report.find({
       where: { project: parent },
-      relations: ["reporter", "comments"],
+      relations: ["reporter", "comments", "project"],
     });
   },
 };

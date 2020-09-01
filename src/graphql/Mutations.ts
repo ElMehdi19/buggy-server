@@ -26,6 +26,7 @@ import {
 import { projectExists } from "../controllers/project";
 import { findUserById } from "../controllers/auth";
 import { addNotification } from "../controllers/notifications";
+import Notification from "../entities/Notification";
 
 export const loginMutation = async (
   _: void,
@@ -109,17 +110,22 @@ export const addReportMutation = async (
   }
   const initEvent = newReportEvent(reporter, { type: "INIT_REPORT" });
   const events = await reportEventStringified(initEvent);
-  const report = Report.create({ ...args, reporter, project, events });
+  const newReport = Report.create({ ...args, reporter, project, events });
+  const report = await newReport.save();
   const notification = await addNotification(reporter.id, {
     type: "NEW_REPORT",
     projectId: project.id,
+    reportId: report.id,
   });
+
   pubsub.publish("NEW_REPORT", {
     newNotification: {
+      notifier: req.userId,
+      report: report.id,
       notification,
     },
   });
-  return await report.save();
+  return report;
 };
 
 export const addProjectMutation = async (
@@ -161,6 +167,8 @@ export const addCommentMutation = async (
   });
   pubsub.publish("NEW_COMMENT", {
     newNotification: {
+      notifier: req.userId,
+      report: report.id,
       notification,
     },
   });
@@ -173,7 +181,7 @@ export const addCommentMutation = async (
 export const updateIssueStatusMutation = async (
   _: void,
   args: { reportId: number; status: REPORT_STATUS },
-  { req }: { req: any }
+  { req, pubsub }: { req: any; pubsub: PubSub }
 ) => {
   if (!req.userId) {
     throw new AuthenticationError("unauthorized");
@@ -184,11 +192,28 @@ export const updateIssueStatusMutation = async (
   if (!report) {
     throw new ApolloError("invalid report id");
   }
+  const { project } = report;
   const user = (await User.findOne(req.userId)) as User;
   const event = newReportEvent(user, { type: "REPORT_STATUS_ACTION", status });
   const events = await reportEventStringified(event, reportId);
 
   await Report.update({ id: reportId }, { status, events });
+
+  const notification = await addNotification(req.userId, {
+    type: "STATUS_UPDATE",
+    reportId: report.id,
+    projectId: project.id,
+    status,
+  });
+
+  pubsub.publish("REPORT_STATUS_UPDATE", {
+    newNotification: {
+      notifier: req.userId,
+      report: report.id,
+      notification,
+    },
+  });
+
   return true;
 };
 
@@ -201,5 +226,16 @@ export const resetNotificationMutation = async (
     throw new AuthenticationError("unauthorized");
   }
   await User.update({ id: req.userId }, { notificationCount: 0 });
+  return true;
+};
+
+export const updateNotificationMutation = async (
+  _: void,
+  args: { id: number; by: number; report: number }
+) => {
+  const { id, by, report: reportId } = args;
+  const notifier = (await User.findOne(by)) as User;
+  const report = (await Report.findOne(reportId)) as Report;
+  await Notification.update({ id }, { notifier, report });
   return true;
 };

@@ -9,6 +9,7 @@ type Query {
   comments(reportId: Int!): [Comment]
   whoami: User
   notificationCount: Int!
+  notification(id: Int!): Notification
   notifications: Notifications
 }
 
@@ -33,6 +34,7 @@ type Mutation {
   addComment(reportId: Int!, content: String!): Comment
   updateIssueStatus(reportId: Int!, status: String!): Boolean!
   resetNotificationCount: Boolean!
+  updateNotification(id: Int!, by: Int!, report: Int!): Boolean!
 }
 
 type Subscription {
@@ -41,10 +43,10 @@ type Subscription {
   newNotification: Notification!
 }
 
-# union Notification = reportSubscription | Comment
-
 type Notification {
   notification: String!
+  notifier: Int
+  report: Int
 }
 
 type User {
@@ -99,5 +101,5 @@ type reportSubscription {
 
 type Notifications {
   count: Int!
-  notifications: [String!]
+  notifications: [Notification!]
 }

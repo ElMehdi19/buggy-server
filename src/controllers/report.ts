@@ -1,7 +1,7 @@
 import Report from "../entities/Report";
 import User from "../entities/User";
 
-export const getReportById = async (id: number): Promise<Report | boolean> => {
+export const getReportById = async (id: number): Promise<Report | false> => {
   const report = await Report.findOne(id, {
     relations: ["reporter", "project"],
   });

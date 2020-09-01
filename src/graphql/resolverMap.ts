@@ -12,6 +12,7 @@ import {
   whoami,
   notificationCountQuery,
   notificationsQuery,
+  notificationQuery,
 } from "./Queries";
 
 import {
@@ -23,6 +24,7 @@ import {
   addCommentMutation,
   updateIssueStatusMutation,
   resetNotificationMutation,
+  updateNotificationMutation,
 } from "./Mutations";
 import {
   newReportSubscription,
@@ -45,6 +47,7 @@ const resolvers: IResolvers = {
     comment: commentQuery,
     comments: commentsQuery,
     notificationCount: notificationCountQuery,
+    notification: notificationQuery,
     notifications: notificationsQuery,
     whoami,
   },
@@ -57,6 +60,7 @@ const resolvers: IResolvers = {
     addComment: addCommentMutation,
     updateIssueStatus: updateIssueStatusMutation,
     resetNotificationCount: resetNotificationMutation,
+    updateNotification: updateNotificationMutation,
   },
   Subscription: {
     newComment: {

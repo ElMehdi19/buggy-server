@@ -9,6 +9,7 @@ import {
 import User from "./User";
 import Project from "./Project";
 import Comment from "./Comment";
+import Notification from "./Notification";
 
 @Entity("report")
 class Report extends BaseEntity {
@@ -46,6 +47,9 @@ class Report extends BaseEntity {
 
   @OneToMany(() => Comment, (comment) => comment.report)
   comments: Comment[];
+
+  @OneToMany(() => Notification, notification => notification.report)
+  notifications: Notification[];
 
   @Column("text", {
     nullable: false,
