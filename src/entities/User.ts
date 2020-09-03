@@ -4,10 +4,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToMany,
+  ManyToMany,
 } from "typeorm";
 import Report from "./Report";
 import Comment from "./Comment";
 import Notification from "./Notification";
+import Project from "./Project";
+import { projectExists } from "../controllers/project";
 
 @Entity("users")
 class User extends BaseEntity {
@@ -40,6 +43,15 @@ class User extends BaseEntity {
 
   @OneToMany(() => Notification, (notification) => notification.notifier)
   notificationsCreated: Notification[];
+
+  @OneToMany(() => Project, (project) => project.manager)
+  managingProjects: Project[];
+
+  @ManyToMany(() => Project, (project) => project.users)
+  projects: Project[];
+
+  @OneToMany(() => Report, (report) => report.assignee)
+  assignedIssues: Report[];
 }
 
 export default User;

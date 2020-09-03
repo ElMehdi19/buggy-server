@@ -7,7 +7,7 @@ export const userField = {
   reports: async (parent: User) => {
     return await Report.find({
       where: { reporter: parent },
-      relations: ["reporter", "project"],
+      relations: ["reporter", "project", "assignee"],
     });
   },
 };
@@ -17,8 +17,9 @@ export const reportField = {
     return await User.findOne(parent.reporter.id);
   },
   project: async (parent: Report & { project: Project }) => {
-    console.log(parent);
-    return await Project.findOne(parent.project.id);
+    return await Project.findOne(parent.project.id, {
+      relations: ["manager", "users"],
+    });
   },
   comments: async (parent: Report) => {
     return Comment.find({
@@ -26,6 +27,10 @@ export const reportField = {
       relations: ["author"],
       order: { id: "DESC" },
     });
+  },
+  assignee: async (parent: Report) => {
+    if (!parent.assignee) return null;
+    return await User.findOne(parent.assignee.id);
   },
 };
 

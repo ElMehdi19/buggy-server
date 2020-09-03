@@ -20,10 +20,14 @@ class Notification extends BaseEntity {
   @Column("text", { nullable: false })
   notification: string;
 
-  @ManyToOne(() => Project, (project) => project.notifications)
+  @ManyToOne(() => Project, (project) => project.notifications, {
+    onDelete: "CASCADE",
+  })
   project: Project;
 
-  @ManyToOne(() => Report, (report) => report.notifications)
+  @ManyToOne(() => Report, (report) => report.notifications, {
+    onDelete: "CASCADE",
+  })
   report: Report;
 
   @ManyToOne(() => User, (user) => user.notificationsCreated)

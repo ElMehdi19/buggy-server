@@ -16,7 +16,7 @@ export const usersQuery = async () => {
 
 export const reportQuery = async (_: void, args: { id: number }) => {
   const report = await Report.findOne(args.id, {
-    relations: ["reporter", "comments", "project"],
+    relations: ["reporter", "comments", "project", "assignee"],
   });
   if (!report) {
     return null;
@@ -34,14 +34,11 @@ export const reportsQuery = async () => {
 };
 
 export const projectQuery = async (_: void, args: { id: number }) => {
-  // const project = await Project.findOne(args.id, {
-  //   relations: ["notifications"],
-  // });
-  return await Project.findOne(args.id);
+  return await Project.findOne(args.id, { relations: ["manager"] });
 };
 
 export const projectsQuery = async () => {
-  return await Project.find({ relations: ["reports"] });
+  return await Project.find({ relations: ["reports", "manager"] });
 };
 
 export const commentQuery = async (_: void, args: { id: number }) => {

@@ -30,11 +30,17 @@ type Mutation {
     reproduceSteps: String!
     projectId: Int!
   ): Report
-  addProject(name: String!, department: String): Project
+  addProject(
+    name: String!
+    department: String
+    supervisor: Int!
+    members: [Int!]
+  ): Project
   addComment(reportId: Int!, content: String!): Comment
   updateIssueStatus(reportId: Int!, status: String!): Boolean!
   resetNotificationCount: Boolean!
   updateNotification(id: Int!, by: Int!, report: Int!): Boolean!
+  assingIssue(id: Int!, userId: Int!): Boolean
 }
 
 type Subscription {
@@ -72,12 +78,15 @@ type Report {
   project: Project!
   comments: [Comment]
   events: String!
+  assignee: User
 }
 
 type Project {
   id: ID!
   name: String!
   departement: String!
+  manager: User
+  users: [User!]
   reports: [Report]
 }
 

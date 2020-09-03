@@ -27,6 +27,7 @@ import { projectExists } from "../controllers/project";
 import { findUserById } from "../controllers/auth";
 import { addNotification } from "../controllers/notifications";
 import Notification from "../entities/Notification";
+import { In } from "typeorm";
 
 export const loginMutation = async (
   _: void,
@@ -130,15 +131,35 @@ export const addReportMutation = async (
 
 export const addProjectMutation = async (
   _: void,
-  args: { name: string; departement: string }
+  args: {
+    name: string;
+    departement: string | null;
+    supervisor: number;
+    members: number[] | null;
+  }
 ) => {
   const exists = await projectExists(args.name);
   if (exists) {
     throw new ValidationError("Project already exists");
   }
-  const { name, departement: dept } = args;
+  const { name, departement: dept, supervisor, members } = args;
   const departement = dept ? dept : "general";
-  const project = await Project.create({ name, departement });
+  const manager = await User.findOne(supervisor);
+  if (!manager) {
+    throw new UserInputError("invalid user id for manager field");
+  }
+  let users: User[];
+  if (members) {
+    users = await User.find({ where: { id: In(members) } });
+  } else {
+    users = await User.find();
+  }
+  const project = await Project.create({
+    name,
+    departement,
+    manager,
+    users: users,
+  });
   return await project.save();
 };
 
@@ -237,5 +258,42 @@ export const updateNotificationMutation = async (
   const notifier = (await User.findOne(by)) as User;
   const report = (await Report.findOne(reportId)) as Report;
   await Notification.update({ id }, { notifier, report });
+  return true;
+};
+
+export const assignIssueMutation = async (
+  _: void,
+  args: { id: number; userId: number },
+  { req }: { req: any }
+) => {
+  if (!req.userId) {
+    throw new AuthenticationError("unauthorized");
+  }
+  const { id, userId } = args;
+  const report = await Report.findOne(id, {
+    relations: ["project", "reporter"],
+  });
+  if (!report) {
+    throw new UserInputError("invalid id for report field");
+  }
+  const project = (await Project.findOne(report.project.id, {
+    relations: ["manager"],
+  })) as Project;
+  if (project.manager) {
+    if (req.userId !== project.manager.id) {
+      throw new AuthenticationError("unauthorized");
+    }
+  } else if (req.userId !== report.reporter.id) {
+    throw new AuthenticationError("unauthorized");
+  }
+  const assignee = await User.findOne(userId);
+  if (!assignee) {
+    throw new UserInputError("invalid id for report field");
+  }
+  try {
+    await Report.update({ id }, { assignee });
+  } catch (e) {
+    return null;
+  }
   return true;
 };

@@ -45,10 +45,12 @@ class Report extends BaseEntity {
   })
   project: Project;
 
-  @OneToMany(() => Comment, (comment) => comment.report)
+  @OneToMany(() => Comment, (comment) => comment.report, { cascade: true })
   comments: Comment[];
 
-  @OneToMany(() => Notification, notification => notification.report)
+  @OneToMany(() => Notification, (notification) => notification.report, {
+    cascade: true,
+  })
   notifications: Notification[];
 
   @Column("text", {
@@ -57,6 +59,9 @@ class Report extends BaseEntity {
       '[{"user":"Mehdi Rami","date":"1598486345775","description":"reported this issue"}]',
   })
   events: string;
+
+  @ManyToOne(() => User, (user) => user.assignedIssues)
+  assignee: User;
 }
 
 export default Report;
