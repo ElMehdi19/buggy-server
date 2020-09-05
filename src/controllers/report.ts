@@ -16,6 +16,10 @@ type REPORT_EVENT_ACTIONS =
   | {
       type: "REPORT_STATUS_ACTION";
       status: string;
+    }
+  | {
+      type: "NEW_ASSIGNEMENT";
+      assignee: User;
     };
 
 type REPORT_EVENT_OBJECT = {
@@ -51,6 +55,13 @@ export const newReportEvent = (
       eventObject = {
         ...eventObject,
         description: `marked the issue as ${action.status}`,
+      };
+      break;
+    case "NEW_ASSIGNEMENT":
+      const { firstName, lastName } = action.assignee;
+      eventObject = {
+        ...eventObject,
+        description: `assigned the issue to ${firstName} ${lastName}`,
       };
       break;
   }

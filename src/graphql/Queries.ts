@@ -100,8 +100,12 @@ export const notificationsQuery = async (
   const notifications: {}[] = [];
   notices.forEach((notice) => {
     console.log(notice);
-    const { notification, report } = notice;
-    notifications.push({ notification, report: report.id });
+    const { notification, report, notifier } = notice;
+    notifications.push({
+      notification,
+      report: report.id,
+      notifier: notifier.id,
+    });
   });
   return { count, notifications };
 };

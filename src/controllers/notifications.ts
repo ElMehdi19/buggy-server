@@ -18,17 +18,18 @@ export const getNotifications = async (
   // return project.notifications;
   const notifications = await Notification.find({
     order: { id: "DESC" },
-    relations: ["report"],
-    select: ["notification", "report"],
+    relations: ["report", "notifier"],
+    select: ["notification", "report", "notifier"],
   });
   return notifications;
 };
 
 type notificationPayload = {
-  type: "NEW_COMMENT" | "NEW_REPORT" | "STATUS_UPDATE";
+  type: "NEW_COMMENT" | "NEW_REPORT" | "STATUS_UPDATE" | "NEW_ASSIGNMENT";
   projectId: number;
   reportId?: number;
   status?: string;
+  assignee?: User;
 };
 
 export const addNotification = async (
@@ -50,6 +51,11 @@ export const addNotification = async (
     case "STATUS_UPDATE":
       const { status } = context;
       content = `marked report #${reportId} on project ${projectName} as ${status}`;
+      break;
+    case "NEW_ASSIGNMENT":
+      const { firstName, lastName } = context.assignee as User;
+      const assignee = `${firstName} ${lastName}`;
+      content = `assigned issue #${reportId} on project ${projectName} to ${assignee}`;
       break;
     default:
       content = `reported an issue on project ${projectName}`;

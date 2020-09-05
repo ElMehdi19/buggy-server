@@ -264,7 +264,7 @@ export const updateNotificationMutation = async (
 export const assignIssueMutation = async (
   _: void,
   args: { id: number; userId: number },
-  { req }: { req: any }
+  { req, pubsub }: { req: any; pubsub: PubSub }
 ) => {
   if (!req.userId) {
     throw new AuthenticationError("unauthorized");
@@ -290,10 +290,33 @@ export const assignIssueMutation = async (
   if (!assignee) {
     throw new UserInputError("invalid id for report field");
   }
+  const user = (await User.findOne(req.userId)) as User;
+  const event = newReportEvent(user, {
+    type: "NEW_ASSIGNEMENT",
+    assignee,
+  });
+  const events = await reportEventStringified(event, report.id);
   try {
-    await Report.update({ id }, { assignee });
+    await Report.update({ id }, { assignee, events });
   } catch (e) {
     return null;
   }
+  const notificationPayload = {
+    reportId: report.id,
+    projectId: project.id,
+    assignee,
+  };
+  const notification = await addNotification(req.userId, {
+    type: "NEW_ASSIGNMENT",
+    ...notificationPayload,
+  });
+
+  pubsub.publish("NEW_ASSIGNMENT", {
+    newNotification: {
+      notifier: req.userId,
+      report: report.id,
+      notification,
+    },
+  });
   return true;
 };
