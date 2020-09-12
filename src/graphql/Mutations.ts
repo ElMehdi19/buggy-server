@@ -28,6 +28,7 @@ import { findUserById } from "../controllers/auth";
 import { addNotification } from "../controllers/notifications";
 import Notification from "../entities/Notification";
 import { In } from "typeorm";
+import { processFiles } from "../controllers/attachments";
 
 export const loginMutation = async (
   _: void,
@@ -98,6 +99,7 @@ export const addReportMutation = async (
     severity: "MINOR" | "MODERATE" | "MAJOR" | "CRITICAL";
     reproduceSteps: string;
     projectId: number;
+    attachments: any;
   },
   { req, pubsub }: { req: any; pubsub: PubSub }
 ): Promise<Report | null> => {
@@ -109,9 +111,28 @@ export const addReportMutation = async (
   if (!project) {
     throw new UserInputError("project doesn't exist");
   }
+
+  const { attachments } = args;
+  console.log("Attachments: ", attachments);
+  const processAttachments = await processFiles(project.id, 1, attachments);
+
+  if (!processAttachments) {
+    throw new UserInputError(
+      "Error while uploading files! Please make sure you are uploading the right file types."
+    );
+  }
+
+  const reportAttachments = JSON.stringify(processAttachments);
+
   const initEvent = newReportEvent(reporter, { type: "INIT_REPORT" });
   const events = await reportEventStringified(initEvent);
-  const newReport = Report.create({ ...args, reporter, project, events });
+  const newReport = Report.create({
+    ...args,
+    reporter,
+    project,
+    events,
+    attachments: reportAttachments,
+  });
   const report = await newReport.save();
   const notification = await addNotification(reporter.id, {
     type: "NEW_REPORT",

@@ -21,9 +21,10 @@ export const reportQuery = async (_: void, args: { id: number }) => {
   if (!report) {
     return null;
   }
-  let { reproduceSteps } = report;
+  const { reproduceSteps, attachments } = report;
   const steps = JSON.parse(reproduceSteps);
-  return { ...report, reproduceSteps: steps };
+  const fileNames = JSON.parse(attachments);
+  return { ...report, reproduceSteps: steps, attachments: fileNames };
 };
 
 export const reportsQuery = async () => {
@@ -99,7 +100,6 @@ export const notificationsQuery = async (
   const notices = await getNotifications();
   const notifications: {}[] = [];
   notices.forEach((notice) => {
-    console.log(notice);
     const { notification, report, notifier } = notice;
     notifications.push({
       notification,

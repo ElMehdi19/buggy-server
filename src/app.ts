@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import { createServer } from "http";
 import { ApolloServer, PubSub } from "apollo-server-express";
 import { createConnection } from "typeorm";
@@ -6,9 +7,9 @@ import { createConnection } from "typeorm";
 import schema from "./graphql/schema";
 import { mehdi, cookieParser } from "./controllers/middlewares";
 import { verifyTokens } from "./controllers/auth";
-import Project from "./entities/Project";
-import Notification from "./entities/Notification";
-import Report from "./entities/Report";
+// import Project from "./entities/Project";
+// import Notification from "./entities/Notification";
+// import Report from "./entities/Report";
 
 // init express and apollo-server
 const app = express();
@@ -33,6 +34,15 @@ apolloServer.applyMiddleware({
     credentials: true,
     origin: "http://localhost:3000",
   },
+});
+
+app.get("/attachments/:fileId", (req: any, res) => {
+  if (!req.userId) {
+    return res.status(401).json({ success: false, reason: "unauthorized" });
+  }
+  const { fileId } = req.params;
+  const filePath = path.join(__dirname, `../attachments/${fileId}`);
+  res.download(filePath);
 });
 
 // listening for requests

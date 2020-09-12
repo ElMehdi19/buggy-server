@@ -11,7 +11,10 @@ type Query {
   notificationCount: Int!
   notification(id: Int!): Notification
   notifications: Notifications
+  # files: Int!
 }
+
+scalar Upload
 
 type Mutation {
   login(email: String!, password: String!): User
@@ -29,6 +32,7 @@ type Mutation {
     severity: String!
     reproduceSteps: String!
     projectId: Int!
+    attachments: [Upload!]
   ): Report
   addProject(
     name: String!
@@ -41,6 +45,7 @@ type Mutation {
   resetNotificationCount: Boolean!
   updateNotification(id: Int!, by: Int!, report: Int!): Boolean!
   assingIssue(id: Int!, userId: Int!): Boolean
+  # addFile(attachments: [Upload!]): Boolean!
 }
 
 type Subscription {
@@ -79,6 +84,7 @@ type Report {
   comments: [Comment]
   events: String!
   assignee: User
+  attachments: [String!]
 }
 
 type Project {

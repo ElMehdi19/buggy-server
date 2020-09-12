@@ -62,6 +62,9 @@ class Report extends BaseEntity {
 
   @ManyToOne(() => User, (user) => user.assignedIssues)
   assignee: User;
+
+  @Column("text", { default: "[]" })
+  attachments: string;
 }
 
 export default Report;
