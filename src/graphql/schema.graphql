@@ -45,7 +45,6 @@ type Mutation {
   resetNotificationCount: Boolean!
   updateNotification(id: Int!, by: Int!, report: Int!): Boolean!
   assingIssue(id: Int!, userId: Int!): Boolean
-  # addFile(attachments: [Upload!]): Boolean!
 }
 
 type Subscription {
