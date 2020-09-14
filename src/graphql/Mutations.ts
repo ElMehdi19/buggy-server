@@ -216,7 +216,9 @@ export const addCommentMutation = async (
   });
   const event = newReportEvent(author, { type: "NEW_COMMENT" });
   const events = await reportEventStringified(event, report.id);
-  await Report.update({ id: report.id }, { events });
+  const updated = Date.now();
+
+  await Report.update({ id: report.id }, { events, updated });
   return comment;
 };
 
@@ -238,8 +240,9 @@ export const updateIssueStatusMutation = async (
   const user = (await User.findOne(req.userId)) as User;
   const event = newReportEvent(user, { type: "REPORT_STATUS_ACTION", status });
   const events = await reportEventStringified(event, reportId);
+  const updated = Date.now();
 
-  await Report.update({ id: reportId }, { status, events });
+  await Report.update({ id: reportId }, { status, events, updated });
 
   const notification = await addNotification(req.userId, {
     type: "STATUS_UPDATE",
@@ -317,8 +320,9 @@ export const assignIssueMutation = async (
     assignee,
   });
   const events = await reportEventStringified(event, report.id);
+  const updated = Date.now();
   try {
-    await Report.update({ id }, { assignee, events });
+    await Report.update({ id }, { assignee, events, updated });
   } catch (e) {
     return null;
   }

@@ -30,7 +30,8 @@ export const reportQuery = async (_: void, args: { id: number }) => {
 export const reportsQuery = async () => {
   return await Report.find({
     relations: ["reporter", "project"],
-    order: { updated: "DESC", id: "DESC" },
+    order: { id: "DESC" },
+    // order: { updated: "ASC" },
   });
 };
 
