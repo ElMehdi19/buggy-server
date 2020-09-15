@@ -38,6 +38,9 @@ class Project extends BaseEntity {
   @ManyToMany(() => User, (user) => user.projects)
   @JoinTable()
   users: User[];
+
+  @Column("text", { name: "issue_fixers", default: "[]" })
+  fixers: string;
 }
 
 export default Project;

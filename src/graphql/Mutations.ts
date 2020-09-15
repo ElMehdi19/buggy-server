@@ -23,7 +23,7 @@ import {
   reportEventStringified,
   getReportById,
 } from "../controllers/report";
-import { projectExists } from "../controllers/project";
+import { incrementFixerCount, projectExists } from "../controllers/project";
 import { findUserById } from "../controllers/auth";
 import { addNotification } from "../controllers/notifications";
 import Notification from "../entities/Notification";
@@ -242,7 +242,21 @@ export const updateIssueStatusMutation = async (
   const events = await reportEventStringified(event, reportId);
   const updated = Date.now();
 
-  await Report.update({ id: reportId }, { status, events, updated });
+  if (status === "CLOSED" && report.status !== "CLOSED") {
+    try {
+      await incrementFixerCount(project, user.id);
+    } catch (e) {
+      return false;
+    }
+  }
+  // await incrementFixerCount(project, user.id);
+
+  try {
+    await Report.update({ id: reportId }, { status, events, updated });
+  } catch (e) {
+    //console.log(e);
+    return false;
+  }
 
   const notification = await addNotification(req.userId, {
     type: "STATUS_UPDATE",
