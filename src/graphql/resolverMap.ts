@@ -26,6 +26,7 @@ import {
   resetNotificationMutation,
   updateNotificationMutation,
   assignIssueMutation,
+  updateProfileMutation,
 } from "./Mutations";
 import {
   newReportSubscription,
@@ -65,6 +66,7 @@ const resolvers: IResolvers = {
     resetNotificationCount: resetNotificationMutation,
     updateNotification: updateNotificationMutation,
     assingIssue: assignIssueMutation,
+    updateProfile: updateProfileMutation,
   },
   Subscription: {
     newComment: {

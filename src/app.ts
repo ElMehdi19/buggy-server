@@ -27,6 +27,10 @@ apolloServer.installSubscriptionHandlers(server);
 app.use(cookieParser);
 app.use(verifyTokens);
 app.use(mehdi);
+app.use(
+  "/static/images",
+  express.static(path.join(__dirname, "../profile_pics"))
+);
 
 apolloServer.applyMiddleware({
   app,

@@ -22,3 +22,11 @@ export const cookieParser = (
   req.cookies = cookies;
   next();
 };
+
+export const any = (array: any[]): boolean => {
+  for (const item of array) {
+    if (item) return true;
+  }
+
+  return false;
+};

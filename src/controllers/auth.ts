@@ -3,6 +3,7 @@ import { Response, NextFunction } from "express";
 
 import User from "../entities/User";
 import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../constants";
+import { hash } from "bcryptjs";
 
 export const userEmailExists = async (email: string): Promise<boolean> => {
   const user = await User.findOne({ email });
@@ -59,4 +60,21 @@ export const verifyTokens = async (
   });
   req.userId = user.id;
   next();
+};
+
+export const comparePasswords = (pwd_1: string, pwd_2: string): boolean =>
+  pwd_1 === pwd_2;
+
+export const updatePassword = async (
+  user: User,
+  newPass: string
+): Promise<boolean> => {
+  const password = await hash(newPass, 12);
+  try {
+    await User.update({ id: user.id }, { password });
+  } catch (e) {
+    console.log(e);
+    return false;
+  }
+  return true;
 };

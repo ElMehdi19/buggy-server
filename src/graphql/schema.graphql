@@ -44,6 +44,12 @@ type Mutation {
   resetNotificationCount: Boolean!
   updateNotification(id: Int!, by: Int!, report: Int!): Boolean!
   assingIssue(id: Int!, userId: Int!): Boolean
+  updateProfile(
+    oldPass: String
+    newPass: String
+    newPassConf: String
+    image: Upload
+  ): Boolean
 }
 
 type Subscription {

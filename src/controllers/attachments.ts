@@ -19,14 +19,14 @@ export const fileExtension = (filename: string): string => {
 export const verifyFileType = (filename: string): boolean => {
   if (!filename.includes(".")) return true;
   const extension = fileExtension(filename);
-  return allowedFileTypes.includes(extension) ? true : false;
+  return allowedFileTypes.includes(extension);
 };
 
 export const verifyMimeType = (mimetype: string): boolean => {
-  return allowedMimeTypes.includes(mimetype) ? true : false;
+  return allowedMimeTypes.includes(mimetype);
 };
 
-type File = {
+export type File = {
   filename: string;
   mimetype: string;
   encoding: string;
@@ -42,9 +42,9 @@ type FileStream = {
 
 export const storeFile = async (file: FileStream): Promise<string> => {
   const { filename, stream, project, report } = file;
-  const file_id = Math.floor(Math.random() * 10000);
+  const fileID = Math.floor(Math.random() * 10000);
   const extension = fileExtension(filename);
-  const attachmentName = `PR${project}-RP${report}-${file_id}.${extension}`;
+  const attachmentName = `PR${project}-RP${report}-${fileID}.${extension}`;
   const path = `attachments/${attachmentName}`;
 
   return new Promise((resolve, reject) =>
@@ -85,7 +85,6 @@ export const processFiles = async (
     );
     return uploads;
   } catch (e) {
-    console.log(e);
     return false;
   }
 };

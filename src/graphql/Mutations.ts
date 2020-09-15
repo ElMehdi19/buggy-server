@@ -17,7 +17,11 @@ import {
   REFRESH_TOKEN_SECRET,
   REPORT_STATUS,
 } from "../constants";
-import { userEmailExists } from "../controllers/auth";
+import {
+  comparePasswords,
+  updatePassword,
+  userEmailExists,
+} from "../controllers/auth";
 import {
   newReportEvent,
   reportEventStringified,
@@ -29,6 +33,8 @@ import { addNotification } from "../controllers/notifications";
 import Notification from "../entities/Notification";
 import { In } from "typeorm";
 import { processFiles } from "../controllers/attachments";
+import { any } from "../controllers/middlewares";
+import { processImage } from "../controllers/profile";
 
 export const loginMutation = async (
   _: void,
@@ -357,5 +363,46 @@ export const assignIssueMutation = async (
       notification,
     },
   });
+  return true;
+};
+
+export const updateProfileMutation = async (
+  _: void,
+  args: { oldPass: string; newPass: string; newPassConf: string; image: any },
+  { req }: { req: any }
+) => {
+  if (!req.userId) {
+    throw new AuthenticationError("unauthorized");
+  }
+  if (!any(Object.keys(args))) {
+    throw new UserInputError("nothing was submitted");
+  }
+
+  const { oldPass, newPass, newPassConf, image } = args;
+  const user = (await User.findOne(req.userId)) as User;
+
+  if (any([oldPass, newPass, newPassConf])) {
+    const { password } = user;
+
+    if (!comparePasswords(newPass, newPassConf)) {
+      throw new UserInputError("passwords mismatch");
+    }
+
+    if (!(await compare(oldPass, password))) {
+      throw new AuthenticationError("unauthorized access");
+    }
+
+    if (!(await updatePassword(user, newPass))) return false;
+  }
+
+  const newImageName = await processImage(user, image);
+  if (!newImageName) return false;
+
+  try {
+    await User.update({ id: user.id }, { image: newImageName });
+  } catch (e) {
+    return false;
+  }
+
   return true;
 };
