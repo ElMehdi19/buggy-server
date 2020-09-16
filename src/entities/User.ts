@@ -52,6 +52,12 @@ class User extends BaseEntity {
 
   @OneToMany(() => Report, (report) => report.assignee)
   assignedIssues: Report[];
+
+  @Column("int", { default: 0, name: "report_count" })
+  reportCount: number;
+
+  @Column("int", { default: 0, name: "fixed_count" })
+  fixedCount: number;
 }
 
 export default User;

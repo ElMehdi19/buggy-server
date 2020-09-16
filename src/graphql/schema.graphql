@@ -72,6 +72,8 @@ type User {
   password: String!
   image: String
   reports: [Report!]
+  fixedCount: Int!
+  reportCount: Int!
 }
 
 type Report {

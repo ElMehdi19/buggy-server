@@ -5,6 +5,7 @@ import {
   PubSub,
   UserInputError,
 } from "apollo-server-express";
+import { In } from "typeorm";
 import { Response } from "express";
 import { hash, compare } from "bcryptjs";
 import { sign } from "jsonwebtoken";
@@ -31,7 +32,6 @@ import { incrementFixerCount, projectExists } from "../controllers/project";
 import { findUserById } from "../controllers/auth";
 import { addNotification } from "../controllers/notifications";
 import Notification from "../entities/Notification";
-import { In } from "typeorm";
 import { processFiles } from "../controllers/attachments";
 import { any } from "../controllers/middlewares";
 import { processImage } from "../controllers/profile";
@@ -119,7 +119,6 @@ export const addReportMutation = async (
   }
 
   const { attachments } = args;
-  console.log("Attachments: ", attachments);
   const processAttachments = await processFiles(project.id, 1, attachments);
 
   if (!processAttachments) {
@@ -140,6 +139,9 @@ export const addReportMutation = async (
     attachments: reportAttachments,
   });
   const report = await newReport.save();
+  const { reportCount } = reporter;
+  await User.update({ id: reporter.id }, { reportCount: reportCount + 1 });
+
   const notification = await addNotification(reporter.id, {
     type: "NEW_REPORT",
     projectId: project.id,
@@ -251,16 +253,16 @@ export const updateIssueStatusMutation = async (
   if (status === "CLOSED" && report.status !== "CLOSED") {
     try {
       await incrementFixerCount(project, user.id);
+      const { fixedCount } = user;
+      await User.update({ id: user.id }, { fixedCount: fixedCount + 1 });
     } catch (e) {
       return false;
     }
   }
-  // await incrementFixerCount(project, user.id);
 
   try {
     await Report.update({ id: reportId }, { status, events, updated });
   } catch (e) {
-    //console.log(e);
     return false;
   }
 
