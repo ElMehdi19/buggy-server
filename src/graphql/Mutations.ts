@@ -387,23 +387,26 @@ export const updateProfileMutation = async (
     const { password } = user;
 
     if (!comparePasswords(newPass, newPassConf)) {
-      throw new UserInputError("passwords mismatch");
+      throw new UserInputError(
+        "New password and password confirmation field don't match!"
+      );
     }
 
     if (!(await compare(oldPass, password))) {
-      throw new AuthenticationError("unauthorized access");
+      throw new AuthenticationError("Wrong password!");
     }
 
     if (!(await updatePassword(user, newPass))) return false;
   }
 
-  const newImageName = await processImage(user, image);
-  if (!newImageName) return false;
-
-  try {
-    await User.update({ id: user.id }, { image: newImageName });
-  } catch (e) {
-    return false;
+  if (image) {
+    const newImageName = await processImage(user, image);
+    if (!newImageName) return false;
+    try {
+      await User.update({ id: user.id }, { image: newImageName });
+    } catch (e) {
+      return false;
+    }
   }
 
   return true;
