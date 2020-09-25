@@ -23,6 +23,7 @@ export const newCommentSubscription = withFilter(
     payload: { newComment: newCommentPayload },
     variables: { reportId: number }
   ) => {
+    console.log(payload);
     return payload.newComment.report.id === variables.reportId;
   }
 );

@@ -14,16 +14,19 @@ type Query {
 }
 
 scalar Upload
+type UID {
+  id: Int!
+}
 
 type Mutation {
-  login(email: String!, password: String!): User
+  login(email: String!, password: String!): UID
   logout: Boolean!
   addUser(
     firstName: String!
     lastName: String!
     email: String!
     password: String!
-  ): User
+  ): Boolean
   addReport(
     bug: String!
     details: String!
@@ -32,17 +35,17 @@ type Mutation {
     reproduceSteps: String!
     projectId: Int!
     attachments: [Upload!]
-  ): Report
+  ): Boolean
   addProject(
     name: String!
     department: String
     supervisor: Int!
     members: [Int!]
-  ): Project
-  addComment(reportId: Int!, content: String!): Comment
-  updateIssueStatus(reportId: Int!, status: String!): Boolean!
-  resetNotificationCount: Boolean!
-  updateNotification(id: Int!, by: Int!, report: Int!): Boolean!
+  ): Boolean
+  addComment(reportId: Int!, content: String!): Boolean
+  updateIssueStatus(reportId: Int!, status: String!): Boolean
+  resetNotificationCount: Boolean
+  updateNotification(id: Int!, by: Int!, report: Int!): Boolean
   assingIssue(id: Int!, userId: Int!): Boolean
   updateProfile(
     oldPass: String

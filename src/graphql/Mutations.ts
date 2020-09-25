@@ -64,7 +64,7 @@ export const loginMutation = async (
     maxAge: 7 * 24 * 3600 * 1000,
   });
 
-  return user;
+  return { id: user.id };
 };
 
 export const logoutMutation = (
@@ -86,14 +86,19 @@ export const addUserMutation = async (
     email: string;
     password: string;
   }
-): Promise<User> => {
+): Promise<boolean> => {
   if (await userEmailExists(args.email))
     throw new ValidationError(
       "This email address is already associated with an account."
     );
   const password = await hash(args.password, 12);
-  const user = await User.create({ ...args, password });
-  return await user.save();
+  try {
+    const user = await User.create({ ...args, password });
+    await user.save();
+    return true;
+  } catch (e) {
+    return false;
+  }
 };
 
 export const addReportMutation = async (
@@ -108,7 +113,7 @@ export const addReportMutation = async (
     attachments: any;
   },
   { req, pubsub }: { req: any; pubsub: PubSub }
-): Promise<Report | null> => {
+): Promise<boolean> => {
   if (!req.userId) {
     throw new AuthenticationError("unauthorized access");
   }
@@ -138,15 +143,25 @@ export const addReportMutation = async (
     events,
     attachments: reportAttachments,
   });
-  const report = await newReport.save();
-  const { reportCount } = reporter;
-  await User.update({ id: reporter.id }, { reportCount: reportCount + 1 });
+  let report: Report;
+  try {
+    report = await newReport.save();
+    const { reportCount } = reporter;
+    await User.update({ id: reporter.id }, { reportCount: reportCount + 1 });
+  } catch (e) {
+    return false;
+  }
 
-  const notification = await addNotification(reporter.id, {
-    type: "NEW_REPORT",
-    projectId: project.id,
-    reportId: report.id,
-  });
+  let notification: string;
+  try {
+    notification = await addNotification(reporter.id, {
+      type: "NEW_REPORT",
+      projectId: project.id,
+      reportId: report.id,
+    });
+  } catch (e) {
+    return false;
+  }
 
   pubsub.publish("NEW_REPORT", {
     newNotification: {
@@ -155,7 +170,7 @@ export const addReportMutation = async (
       notification,
     },
   });
-  return report;
+  return true;
 };
 
 export const addProjectMutation = async (
@@ -183,13 +198,19 @@ export const addProjectMutation = async (
   } else {
     users = await User.find();
   }
-  const project = await Project.create({
-    name,
-    departement,
-    manager,
-    users: users,
-  });
-  return await project.save();
+
+  try {
+    const project = await Project.create({
+      name,
+      departement,
+      manager,
+      users: users,
+    });
+    await project.save();
+  } catch (e) {
+    return false;
+  }
+  return true;
 };
 
 export const addCommentMutation = async (
@@ -206,28 +227,41 @@ export const addCommentMutation = async (
     throw new ApolloError("Report not found");
   }
 
-  const author = await findUserById(req.userId);
-  const report = reportInstance as Report;
-  const commentEntity = Comment.create({ content, author, report });
-  const comment = await commentEntity.save();
-  const notification = await addNotification(author.id, {
-    type: "NEW_COMMENT",
-    projectId: report.project.id,
-    reportId: report.id,
-  });
-  pubsub.publish("NEW_COMMENT", {
-    newNotification: {
-      notifier: req.userId,
-      report: report.id,
-      notification,
-    },
-  });
+  let author: User;
+  let report: Report;
+  let comment: Comment;
+
+  try {
+    author = await findUserById(req.userId);
+    report = reportInstance as Report;
+    const commentEntity = Comment.create({ content, author, report });
+    comment = await commentEntity.save();
+    const notification = await addNotification(author.id, {
+      type: "NEW_COMMENT",
+      projectId: report.project.id,
+      reportId: report.id,
+    });
+    pubsub.publish("NEW_COMMENT", {
+      newNotification: {
+        notifier: req.userId,
+        report: report.id,
+        notification,
+      },
+    });
+  } catch (e) {
+    return false;
+  }
+
   const event = newReportEvent(author, { type: "NEW_COMMENT" });
   const events = await reportEventStringified(event, report.id);
   const updated = Date.now();
 
-  await Report.update({ id: report.id }, { events, updated });
-  return comment;
+  try {
+    await Report.update({ id: report.id }, { events, updated });
+  } catch (e) {
+    return false;
+  }
+  return true;
 };
 
 export const updateIssueStatusMutation = async (
@@ -292,7 +326,11 @@ export const resetNotificationMutation = async (
   if (!req.userId) {
     throw new AuthenticationError("unauthorized");
   }
-  await User.update({ id: req.userId }, { notificationCount: 0 });
+  try {
+    await User.update({ id: req.userId }, { notificationCount: 0 });
+  } catch (e) {
+    return false;
+  }
   return true;
 };
 
@@ -301,9 +339,14 @@ export const updateNotificationMutation = async (
   args: { id: number; by: number; report: number }
 ) => {
   const { id, by, report: reportId } = args;
-  const notifier = (await User.findOne(by)) as User;
-  const report = (await Report.findOne(reportId)) as Report;
-  await Notification.update({ id }, { notifier, report });
+  try {
+    const notifier = (await User.findOne(by)) as User;
+    const report = (await Report.findOne(reportId)) as Report;
+    await Notification.update({ id }, { notifier, report });
+  } catch (e) {
+    return false;
+  }
+
   return true;
 };
 
@@ -341,9 +384,9 @@ export const assignIssueMutation = async (
     type: "NEW_ASSIGNEMENT",
     assignee,
   });
-  const events = await reportEventStringified(event, report.id);
-  const updated = Date.now();
   try {
+    const events = await reportEventStringified(event, report.id);
+    const updated = Date.now();
     await Report.update({ id }, { assignee, events, updated });
   } catch (e) {
     return null;
